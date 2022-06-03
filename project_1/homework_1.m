@@ -1,0 +1,113 @@
+clear;
+clc;
+%define the parametre and initial variable quantity
+m=320;
+Jz=315;
+P=2000;
+ms=0.46;
+g=9.8;
+V(1)=250;
+x(1)=0;
+H(1)=7000;
+theta(1)=0;
+phi=0;
+alpha(1)=0;
+omega=0;
+S=0.45;L=2.5;
+m_omega=-2;
+m_alpha=-0.1;m_delta=0.024;
+t(1)=0;
+delta(1)=0;
+k1=-0.7;k2=-0.1;
+i=1;  dt=0.001;
+%first stage
+while x(i)<=9100
+    t(i+1)=t(i)+dt;
+    H2=2000*cos(0.000314*1.1*x(i))+5000;
+    H3=-2000*0.000314*1.1*sin(0.000314*1.1*x(i));
+    delta(i+1)=k1*(H(i)-H2)+k2*(V(i)*sin(theta(i))-H3);
+    alpha(i+1)=-m_delta*delta(i+1)/m_alpha;  
+    T=288.15-0.0065*H(i);
+    rou=1.2495*(T/288.15)^4.25588;
+    q=0.5*rou*V(i)^2;
+    Cy=0.25*alpha(i)*180/pi+0.05*delta(i)*180/pi;
+    Cx=0.2+0.005*(alpha(i)*180/pi)^2;
+    Xb=S*q*Cx;
+    Yb=S*q*Cy;  
+    theta(i+1)=theta(i)+(P*sin(alpha(i))+Yb-m*g*cos(theta(i)))*dt/m/V(i);
+    V(i+1)=V(i)+(P*cos(alpha(i))-Xb-m*g*sin(theta(i)))*dt/m;
+    x(i+1)=x(i)+V(i)*cos(theta(i))*dt;
+    H(i+1)=H(i)+V(i)*sin(theta(i))*dt;
+    i=i+1;
+end
+%second stage
+k1=-0.018;k2=-0.003;
+while x(i)>9100&&x(i)<24000
+    t(i+1)=t(i)+dt;
+    m=m-ms*dt;
+    H2=3050;
+    delta(i+1)=k1*(H(i)-H2)+k2*(V(i)*sin(theta(i)));
+    alpha(i+1)=-m_delta*delta(i+1)/m_alpha;  
+    T=288.15-0.0065*H(i);
+    rou=1.2495*(T/288.15)^4.25588;
+    q=0.5*rou*V(i)^2;
+    Cy=0.25*alpha(i)*180/pi+0.05*delta(i)*180/pi;
+    Cx=0.2+0.005*(alpha(i)*180/pi)^2;
+    Xb=S*q*Cx;
+    Yb=S*q*Cy;  
+    theta(i+1)=theta(i)+(P*sin(alpha(i))+Yb-m*g*cos(theta(i)))*dt/m/V(i);
+    V(i+1)=V(i)+(P*cos(alpha(i))-Xb-m*g*sin(theta(i)))*dt/m;
+    x(i+1)=x(i)+V(i)*cos(theta(i))*dt;
+    H(i+1)=H(i)+V(i)*sin(theta(i))*dt;
+    i=i+1;
+end
+%third stage
+theta2(i)=theta(i);k=1.95;k1=-0.05;k2=-0.01;
+while x(i)<=30000&&H(i)>=0
+    t(i+1)=t(i)+dt;
+    m=m-ms*dt;
+    Q=atan(-H(i)/(30000-x(i)));
+    elta=Q-theta(i);
+    r=sqrt((30000-x(i))^2+H(i)^2);
+    Q2=V(i)*sin(elta)/r;
+    delta(i+1)=k1*(theta(i)-theta2(i))+k2*((P*sin(alpha(i))+Yb-m*g*cos(theta(i)))*dt/m/V(i)-k*Q2);
+    theta2(i+1)=theta2(i)+k*Q2*dt;
+    alpha(i+1)=-m_delta*delta(i+1)/m_alpha;  
+    T=288.15-0.0065*H(i);
+    rou=1.2495*(T/288.15)^4.25588;
+    q=0.5*rou*V(i)^2;
+    Cy=0.25*alpha(i)*180/pi+0.05*delta(i)*180/pi;
+    Cx=0.2+0.005*(alpha(i)*180/pi)^2;
+    Xb=S*q*Cx;
+    Yb=S*q*Cy;  
+    theta(i+1)=theta(i)+(P*sin(alpha(i))+Yb-m*g*cos(theta(i)))*dt/m/V(i);
+    V(i+1)=V(i)+(P*cos(alpha(i))-Xb-m*g*sin(theta(i)))*dt/m;
+    x(i+1)=x(i)+V(i)*cos(theta(i))*dt;
+    H(i+1)=H(i)+V(i)*sin(theta(i))*dt;
+    nx3(i+1)=(P*cos(alpha(i))-Xb)/(m*g);
+    ny3(i+1)=(P*sin(alpha(i))+Yb)/(m*g);
+    nx1(i+1)=nx3(i+1)*cos(alpha(i))+ny3(i+1)*sin(alpha(i));
+    ny1(i+1)=-nx3(i+1)*sin(alpha(i))+ny3(i+1)*cos(alpha(i));
+    i=i+1;
+end
+%draw the curves
+figure(1)
+subplot(3,2,4);
+plot(x,H,'k','LineWidth',1.4);
+xlabel('x/m');ylabel('H/m');title('纵向理想弹道');
+subplot(3,2,3);
+plot(t,H,'r','LineWidth',1.2);
+xlabel('t/s');ylabel('H');title('H随时间变化曲线');
+subplot(3,2,2);
+plot(t,alpha*180/pi,'r','LineWidth',1.2);
+xlabel('t/s');title('攻角随时间变化曲线');
+subplot(3,2,5);
+plot(t,theta*180/pi,'r','LineWidth',1.2);
+xlabel('t/s');title('俯仰角随时间变化曲线');
+figure(2)
+subplot(1,2,1);
+plot(t,nx1,'k','LineWidth',1.4);
+xlabel('t/s');ylabel('nx1');title('nx1');
+subplot(1,2,2);
+plot(t,ny1,'r','LineWidth',1.2);
+xlabel('t/s');ylabel('ny1');title('ny1');
